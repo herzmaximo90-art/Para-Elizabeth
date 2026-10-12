@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Para Elizabeth ❤️</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; 
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #060208; 
+    color: #ffe4e8;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow: hidden;
+  }
+  main { 
+    width: 100%; 
+    max-width: 420px; 
+    text-align: center; 
+    padding: 10px; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 {
+    margin: 0 0 4px 0; 
+    font-size: clamp(1.8rem, 6vw, 2.8rem);
+    letter-spacing: .08em; 
+    color: #ffb7c4;
+    text-shadow: 0 0 18px #ff174a77;
+    opacity: 0; 
+    animation: titleIn 1.2s ease forwards 0.5s;
+  }
+  p { 
+    margin: 0 0 10px 0; 
+    color: #cda6b1; 
+    letter-spacing: .05em; 
+    font-size: clamp(.75rem, 3.2vw, .95rem); 
+  }
+  canvas { 
+    display: block; 
+    width: 100%; 
+    max-width: 360px;
+    height: auto; 
+    aspect-ratio: 1 / 1;
+    margin: 0 auto; 
+  }
+  @keyframes titleIn { to { opacity: 1; } }
+  .note { 
+    position: fixed; 
+    bottom: 12px; 
+    font-size: .75rem; 
+    color: #73515d; 
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Elizabeth</h1>
+  <p>Un corazón lleno de “te amo” en todos los idiomas</p>
+  <canvas id="heart" aria-label="Un corazón animado formado por frases de amor"></canvas>
+</main>
+<div class="note">Hecho con cariño ♥</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('heart');
+  const ctx = canvas.getContext('2d');
+  const phrases = [
+    "I love you", "Seni seviyorum", "Te amo", "Je t'aime",
+    "Ich liebe dich", "Ti amo", "Eu te amo", "Я тебя люблю",
+    "사랑해", "愛してる", "我爱你", "मैं तुमसे प्यार करता हूँ",
+    "Σ' αγαπώ", "Ik hou van jou", "Jag älskar dig", "Kocham cię",
+    "ฉันรักเธอ", "Anh yêu em", "Aku cinta kamu", "Я тебе кохаю",
+    "Te amo, Elizabeth", "I love you, Elizabeth"
+  ];
+
+  let W, H, particles = [], startTime = 0;
+
+  function heartShape(t) {
+    const x = 16 * Math.pow(Math.sin(t), 3);
+    const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+    return { x, y };
+  }
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = rect.width;
+    H = rect.height;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    makeHeart();
+  }
+
+  function makeHeart() {
+    particles = [];
+    const cx = W / 2;
+    const cy = H / 2 - 10;
+    const scale = Math.min(W, H) / 38;
+
+    const gridSize = 8.5;
+    let index = 0;
+
+    for (let y = -17; y <= 15; y += gridSize / scale) {
+      for (let x = -18; x <= 18; x += gridSize / scale) {
+        const nx = x / 15;
+        const ny = -y / 13;
+        
+        if (Math.pow(nx*nx + ny*ny - 1, 3) - nx*nx*Math.pow(ny, 3) <= 0) {
+          const phrase = phrases[index % phrases.length];
+          index++;
+
+          const fontSize = Math.max(7, Math.min(10, scale * 0.55));
+          ctx.font = `bold ${fontSize}px Arial`;
+          const textWidth = ctx.measureText(phrase).width;
+
+          const red = Math.floor(200 + Math.random() * 55);
+          const green = Math.floor(20 + Math.random() * 60);
+          const blue = Math.floor(60 + Math.random() * 80);
+
+          particles.push({
+            x: cx + x * scale,
+            y: cy + y * scale,
+            phrase,
+            size: fontSize,
+            width: textWidth,
+            color: `rgb(${red},${green},${blue})`,
+            delay: particles.length * 28 + Math.random() * 100
+          });
+        }
+      }
+    }
+    startTime = performance.now();
+  }
+
+  function draw(now) {
+    ctx.clearRect(0, 0, W, H);
+    const elapsed = now - startTime;
+
+    for (const p of particles) {
+      const progress = Math.max(0, Math.min(1, (elapsed - p.delay) / 500));
+      if (progress <= 0) continue;
+
+      const ease = 1 - Math.pow(1 - progress, 3);
+      ctx.save();
+      ctx.globalAlpha = ease;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `bold ${p.size}px Arial`;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = p.color;
+      ctx.fillText(p.phrase, p.x, p.y + (1 - ease) * 6);
+      ctx.restore();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+    </html>
+    
